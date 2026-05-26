@@ -1,0 +1,543 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>骨学口頭試問システム</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@400;600;700&family=Noto+Sans+JP:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:        #f5f2eb;
+    --surface:   #fffefa;
+    --border:    #d6cfc0;
+    --accent:    #2a5f4f;
+    --accent2:   #7a4f2a;
+    --text:      #1e1a14;
+    --muted:     #8a7f6e;
+    --highlight: #e8f4f0;
+    --row-odd:   #faf8f4;
+    --row-even:  #f0ede5;
+    --shadow:    0 4px 24px rgba(30,26,20,0.10);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Noto Sans JP', sans-serif;
+    min-height: 100vh;
+    padding: 32px 16px 64px;
+  }
+
+  /* ── ヘッダー ── */
+  header {
+    text-align: center;
+    margin-bottom: 40px;
+  }
+  header h1 {
+    font-family: 'Noto Serif JP', serif;
+    font-size: clamp(1.4rem, 4vw, 2rem);
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    color: var(--accent);
+    margin-bottom: 6px;
+  }
+  header p {
+    font-size: 0.82rem;
+    color: var(--muted);
+    letter-spacing: 0.05em;
+  }
+  .divider {
+    width: 60px; height: 2px;
+    background: linear-gradient(90deg, var(--accent), var(--accent2));
+    margin: 14px auto 0;
+    border-radius: 2px;
+  }
+
+  /* ── レイアウト ── */
+  .container {
+    max-width: 900px;
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 28px;
+    align-items: start;
+  }
+  @media (max-width: 680px) {
+    .container { grid-template-columns: 1fr; }
+  }
+
+  /* ── カード共通 ── */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    box-shadow: var(--shadow);
+    overflow: hidden;
+  }
+  .card-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 16px 20px 14px;
+    border-bottom: 1px solid var(--border);
+    background: linear-gradient(135deg, #f7f4ee 0%, #eee9de 100%);
+  }
+  .card-header .badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px; height: 28px;
+    border-radius: 50%;
+    font-size: 0.8rem;
+    font-weight: 700;
+    flex-shrink: 0;
+  }
+  .badge-green  { background: var(--accent);  color: #fff; }
+  .badge-brown  { background: var(--accent2); color: #fff; }
+  .card-header h2 {
+    font-family: 'Noto Serif JP', serif;
+    font-size: 0.95rem;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+  }
+  .card-body { padding: 0; }
+
+  /* ── データ一覧テーブル ── */
+  .data-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.78rem;
+  }
+  .data-table thead th {
+    padding: 8px 12px;
+    text-align: left;
+    font-size: 0.72rem;
+    font-weight: 500;
+    color: var(--muted);
+    letter-spacing: 0.06em;
+    background: #f0ede5;
+    border-bottom: 1px solid var(--border);
+  }
+  .data-table tbody tr:nth-child(odd)  { background: var(--row-odd); }
+  .data-table tbody tr:nth-child(even) { background: var(--row-even); }
+  .data-table tbody tr:hover { background: var(--highlight); }
+  .data-table td {
+    padding: 5px 12px;
+    border-bottom: 1px solid #e8e4da;
+    vertical-align: middle;
+  }
+  .td-num  { width: 40px; color: var(--muted); font-size: 0.7rem; text-align: right; padding-right: 8px; }
+  .td-bone { font-weight: 500; color: var(--accent); }
+  .td-part { color: var(--text); }
+
+  /* スクロール領域 */
+  .table-scroll { max-height: 340px; overflow-y: auto; }
+  .table-scroll::-webkit-scrollbar { width: 5px; }
+  .table-scroll::-webkit-scrollbar-track { background: #f0ede5; }
+  .table-scroll::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+  /* カテゴリタブ */
+  .cat-tabs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    padding: 12px 16px 0;
+    background: #f7f4ee;
+    border-bottom: 1px solid var(--border);
+  }
+  .cat-tab {
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 0.72rem;
+    font-weight: 500;
+    cursor: pointer;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--muted);
+    transition: all 0.18s;
+  }
+  .cat-tab.active {
+    background: var(--accent);
+    color: #fff;
+    border-color: var(--accent);
+  }
+  .cat-tab:hover:not(.active) { background: var(--highlight); }
+
+  /* ── 試験パネル（右カラム） ── */
+  .exam-card {
+    position: sticky;
+    top: 20px;
+  }
+
+  /* ボタン */
+  .btn-start {
+    display: block;
+    width: calc(100% - 32px);
+    margin: 16px auto;
+    padding: 14px 0;
+    background: linear-gradient(135deg, var(--accent) 0%, #1e4a3b 100%);
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    font-family: 'Noto Serif JP', serif;
+    font-size: 1rem;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    cursor: pointer;
+    box-shadow: 0 3px 12px rgba(42,95,79,0.35);
+    transition: all 0.2s;
+  }
+  .btn-start:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 18px rgba(42,95,79,0.45);
+  }
+  .btn-start:active { transform: translateY(0); }
+
+  /* 問題リスト */
+  #quiz-area {
+    padding: 0 16px 20px;
+    min-height: 80px;
+  }
+  .quiz-placeholder {
+    text-align: center;
+    color: var(--muted);
+    font-size: 0.82rem;
+    padding: 24px 0 8px;
+    letter-spacing: 0.04em;
+  }
+  .quiz-meta {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.72rem;
+    color: var(--muted);
+    letter-spacing: 0.05em;
+    margin-bottom: 12px;
+    padding-top: 4px;
+  }
+  .quiz-meta .total { font-weight: 600; color: var(--accent); }
+
+  .quiz-item {
+    display: grid;
+    grid-template-columns: 28px 1fr;
+    gap: 8px;
+    align-items: start;
+    padding: 10px 10px;
+    margin-bottom: 6px;
+    border-radius: 8px;
+    border: 1px solid transparent;
+    background: var(--row-odd);
+    animation: slideIn 0.3s ease both;
+  }
+  .quiz-item:nth-child(odd)  { background: var(--row-odd);  }
+  .quiz-item:nth-child(even) { background: var(--row-even); }
+  @keyframes slideIn {
+    from { opacity: 0; transform: translateX(12px); }
+    to   { opacity: 1; transform: translateX(0); }
+  }
+  .quiz-item .q-num {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 22px; height: 22px;
+    border-radius: 50%;
+    background: var(--accent);
+    color: #fff;
+    font-size: 0.65rem;
+    font-weight: 700;
+    flex-shrink: 0;
+    margin-top: 1px;
+  }
+  .quiz-item .q-content {
+    display: flex;
+    align-items: baseline;
+    flex-wrap: wrap;
+    gap: 0 10px;
+  }
+  .quiz-item .q-no {
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: var(--muted);
+    white-space: nowrap;
+  }
+  .quiz-item .q-bone {
+    font-weight: 600;
+    font-size: 0.9rem;
+    color: var(--accent);
+    letter-spacing: 0.02em;
+    white-space: nowrap;
+  }
+  .quiz-item .q-part {
+    font-size: 0.85rem;
+    color: var(--text);
+    white-space: nowrap;
+  }
+
+  /* カテゴリ色バッジ */
+  .cat-pill {
+    display: inline-block;
+    padding: 1px 7px;
+    border-radius: 10px;
+    font-size: 0.62rem;
+    font-weight: 500;
+    margin-left: 4px;
+  }
+  .c0 { background: #e8f4f0; color: #2a5f4f; }
+  .c1 { background: #f0e8f4; color: #5f2a5f; }
+  .c2 { background: #f4f0e8; color: #5f4a2a; }
+  .c3 { background: #e8ecf4; color: #2a3a5f; }
+  .c4 { background: #f4ebe8; color: #5f2a2a; }
+
+  /* ── フッター ── */
+  .footer-note {
+    text-align: center;
+    font-size: 0.7rem;
+    color: var(--muted);
+    margin-top: 32px;
+    letter-spacing: 0.05em;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>骨学口頭試問システム</h1>
+  <p>解剖学 ／ 骨学口頭試問データ</p>
+  <div class="divider"></div>
+</header>
+
+<div class="container">
+
+  <!-- 左：データ一覧 -->
+  <div class="card">
+    <div class="card-header">
+      <span class="badge badge-green">覧</span>
+      <h2>骨名称 一覧表（カテゴリ別）</h2>
+    </div>
+    <div class="cat-tabs" id="cat-tabs"></div>
+    <div class="card-body">
+      <div class="table-scroll">
+        <table class="data-table" id="data-table">
+          <thead>
+            <tr>
+              <th class="td-num">番号</th>
+              <th>骨名</th>
+              <th>部位名</th>
+            </tr>
+          </thead>
+          <tbody id="table-body"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- 右：試験パネル -->
+  <div class="card exam-card">
+    <div class="card-header">
+      <span class="badge badge-brown">試</span>
+      <h2>口頭試問 — ランダム出題</h2>
+    </div>
+    <button class="btn-start" onclick="startQuiz()">試験開始</button>
+    <div id="quiz-area">
+      <p class="quiz-placeholder">「試験開始」を押すと<br>各カテゴリから2問ずつ、計10問を出題します</p>
+    </div>
+  </div>
+
+</div>
+
+<p class="footer-note">各カテゴリ 2問 × 5カテゴリ ＝ 計10問 ／ 同一問題は重複しません</p>
+
+<script>
+// ─── データ（シート名がカテゴリ名） ───────────────────────────────────────
+const CATEGORIES = [
+  {
+    name: "下枝",
+    data: [
+      [45,"寛骨","寛骨臼"],[46,"寛骨","月状面"],[47,"寛骨","寛骨臼切痕"],[48,"寛骨","閉鎖孔"],
+      [49,"寛骨","恥骨下枝"],[50,"寛骨","恥骨結節"],[51,"寛骨","弓状線"],[52,"寛骨","腸恥隆起"],
+      [53,"寛骨","腸骨窩"],[54,"寛骨","耳状面"],[55,"寛骨","腸骨稜"],[56,"寛骨","上前腸骨棘"],
+      [57,"寛骨","下前腸骨棘"],[58,"寛骨","腸骨結節"],[59,"寛骨","下後腸骨棘"],[60,"寛骨","坐骨枝"],
+      [61,"寛骨","坐骨棘"],[62,"寛骨","坐骨結節"],[63,"寛骨","大坐骨切痕"],
+      [64,"大腿骨","大腿骨頭"],[65,"大腿骨","大転子"],[66,"大腿骨","小転子"],[67,"大腿骨","転子間線"],
+      [68,"大腿骨","転子間稜"],[69,"大腿骨","大腿骨頭窩"],[70,"大腿骨","顆間窩"],[71,"大腿骨","膝蓋面"],
+      [72,"大腿骨","外側上顆"],[73,"大腿骨","粗線"],[74,"大腿骨","外側顆"],[75,"大腿骨","殿筋粗面"],
+      [76,"大腿骨","恥骨筋線"],
+      [77,"脛骨","腓骨関節面"],[78,"脛骨","外側顆"],[79,"脛骨","顆間隆起"],[80,"脛骨","腓骨切痕"],
+      [81,"脛骨","内果"],[82,"脛骨","ヒラメ筋線"],
+      [83,"腓骨","腓骨頭"],[84,"腓骨","腓骨頭関節面"],[85,"腓骨","外果関節面"]
+    ]
+  },
+  {
+    name: "上肢",
+    data: [
+      [1,"肩甲骨","内側縁"],[2,"肩甲骨","下角"],[3,"肩甲骨","肩峰"],[4,"肩甲骨","肩甲棘"],
+      [5,"肩甲骨","棘上窩"],[6,"肩甲骨","棘下窩"],[7,"肩甲骨","肩甲下窩"],[8,"肩甲骨","関節窩"],
+      [9,"肩甲骨","関節上結節"],[10,"肩甲骨","烏口突起"],[11,"肩甲骨","肩甲切痕"],
+      [12,"鎖骨","胸骨端"],[13,"鎖骨","胸骨関節面"],
+      [14,"上腕骨","上腕骨頭"],[15,"上腕骨","解剖頸"],[16,"上腕骨","大結節"],[17,"上腕骨","小結節"],
+      [18,"上腕骨","結節間溝"],[19,"上腕骨","小結節稜"],[20,"上腕骨","大結節稜"],[21,"上腕骨","外科頚"],
+      [22,"上腕骨","三角筋粗面"],[23,"上腕骨","橈骨神経溝"],[24,"上腕骨","内側上顆"],
+      [25,"上腕骨","上腕骨滑車"],[26,"上腕骨","上腕骨小頭"],[27,"上腕骨","尺骨神経溝"],
+      [28,"上腕骨","肘頭窩"],[29,"上腕骨","橈骨窩"],[30,"上腕骨","鈎突窩"],
+      [31,"橈骨","橈骨頭"],[32,"橈骨","関節環状面"],[33,"橈骨","橈骨頸"],[34,"橈骨","橈骨粗面"],
+      [35,"橈骨","尺骨切痕"],[36,"橈骨","背側結節"],
+      [37,"尺骨","肘頭"],[38,"尺骨","滑車切痕"],[39,"尺骨","鉤状突起"],[40,"尺骨","橈骨切痕"],
+      [41,"尺骨","尺骨粗面"],[42,"尺骨","尺骨頭"],[43,"尺骨","関節環状面"],[44,"尺骨","茎状突起"]
+    ]
+  },
+  {
+    name: "脊柱",
+    data: [
+      [86,"第一頚椎","後弓"],[87,"第一頚椎","前結節"],[88,"第一頚椎","椎孔"],
+      [89,"第一頚椎","横突起"],[90,"第一頚椎","横突孔"],
+      [91,"第二頚椎","歯突起"],[92,"第二頚椎","棘突起"],[93,"第二頚椎","横突起"],
+      [94,"第二頚椎","横突孔"],[95,"第二頚椎","椎弓"],
+      [96,"第四頚椎","椎体"],[97,"第四頚椎","椎弓"],[98,"第四頚椎","椎孔"],
+      [99,"第四頚椎","椎弓根"],[100,"第四頚椎","横突起"],[101,"第四頚椎","横突孔"],
+      [102,"第四頚椎","棘突起"],[103,"第四頚椎","鉤状突起"],
+      [104,"第六胸椎","椎体"],[105,"第六胸椎","横突肋骨窩"],[106,"第六胸椎","椎弓"],
+      [107,"第六胸椎","横突起"],[108,"第六胸椎","棘突起"],[109,"第六胸椎","肋骨窩"],
+      [110,"第三腰椎","椎体"],[111,"第三腰椎","椎弓"],[112,"第三腰椎","肋骨突起"],
+      [113,"第三腰椎","棘突起"],[114,"第三腰椎","乳頭突起"]
+    ]
+  },
+  {
+    name: "頭蓋骨",
+    data: [
+      [115,"頭蓋骨","前頭鱗"],[116,"頭蓋骨","オトガイ隆起"],[117,"頭蓋骨","眼窩下孔"],
+      [118,"頭蓋骨","上眼窩裂"],[119,"頭蓋骨","下顎体"],[120,"頭蓋骨","下顎枝"],
+      [121,"頭蓋骨","オトガイ孔"],[122,"頭蓋骨","乳様突起"],[123,"頭蓋骨","咬筋粗面"],
+      [124,"頭蓋骨","下顎骨関節突起"],[125,"頭蓋骨","鱗状縫合"],[126,"頭蓋骨","蝶鱗縫合"],
+      [127,"頭蓋骨","冠状縫合"],[128,"頭蓋骨","矢状縫合"],[129,"頭蓋骨","ラムダ縫合"],
+      [130,"頭蓋骨","外後頭隆起"],[131,"頭蓋骨","上項線"],[132,"頭蓋骨","オトガイ棘"],
+      [133,"頭蓋骨","蝶形骨小翼"],[134,"頭蓋骨","篩骨の篩板"],[135,"頭蓋骨","下垂体窩(トルコ鞍)"],
+      [136,"頭蓋骨","鞍背"],[137,"頭蓋骨","斜台"],[138,"頭蓋骨","正円孔"],
+      [139,"頭蓋骨","視神経管"],[140,"頭蓋骨","卵円孔"],[141,"頭蓋骨","破裂孔"],
+      [142,"頭蓋骨","棘孔"],[143,"頭蓋骨","頚静脈孔"],[144,"頭蓋骨","内耳孔"],
+      [145,"頭蓋骨","横洞溝"],[146,"頭蓋骨","S状洞溝"],[147,"頭蓋骨","内後頭隆起"],
+      [148,"頭蓋骨","舌下神経管"],[149,"頭蓋骨","後頭顆"],[150,"頭蓋骨","後鼻孔"],
+      [151,"頭蓋骨","頚動脈管外口"],[152,"頭蓋骨","乳様突起"],[153,"頭蓋骨","外後頭稜"],
+      [154,"頭蓋骨","翼状突起(外側板・内側板)"]
+    ]
+  },
+  {
+    name: "手根・足根骨",
+    data: [
+      [155,"手根骨","豆状骨"],[156,"手根骨","三角骨"],[157,"手根骨","月状骨"],
+      [158,"手根骨","舟状骨"],[159,"手根骨","大菱形骨"],[160,"手根骨","小菱形骨"],
+      [161,"手根骨","有頭骨"],[162,"手根骨","有鈎骨"],
+      [163,"足根骨","距骨頭"],[164,"足根骨","距骨滑車"],[165,"足根骨","距骨溝"],
+      [166,"足根骨","踵骨隆起"],[167,"足根骨","立方関節面"],[168,"足根骨","載距突起"],
+      [169,"足根骨","舟状骨"],[170,"足根骨","立方骨"],[171,"足根骨","内側楔状骨"],
+      [172,"足根骨","中間楔状骨"],[173,"足根骨","外側楔状骨"],
+      [174,"肋骨","肋骨頭"],[175,"肋骨","肋骨体"],
+      [176,"胸骨","胸骨柄"],[177,"胸骨","胸骨体"],[178,"胸骨","頚切痕"]
+    ]
+  }
+];
+
+const CAT_COLORS = ["c0","c1","c2","c3","c4"];
+let currentCat = 0;
+
+// ── タブ生成 ──────────────────────────────────────────────────────
+function buildTabs() {
+  const tabs = document.getElementById('cat-tabs');
+  CATEGORIES.forEach((cat, i) => {
+    const btn = document.createElement('button');
+    btn.className = 'cat-tab' + (i === 0 ? ' active' : '');
+    btn.textContent = cat.name;
+    btn.onclick = () => {
+      document.querySelectorAll('.cat-tab').forEach(t => t.classList.remove('active'));
+      btn.classList.add('active');
+      currentCat = i;
+      renderTable(i);
+    };
+    tabs.appendChild(btn);
+  });
+}
+
+// ── テーブル描画 ──────────────────────────────────────────────────
+function renderTable(catIdx) {
+  const tbody = document.getElementById('table-body');
+  tbody.innerHTML = '';
+  const rows = CATEGORIES[catIdx].data;
+  rows.forEach(([num, bone, part]) => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td class="td-num">${num}</td>
+      <td class="td-bone">${bone}</td>
+      <td class="td-part">${part}</td>`;
+    tbody.appendChild(tr);
+  });
+}
+
+// ── ランダム選択（各カテゴリ2問、重複なし） ────────────────────────
+function pickRandom(arr, n) {
+  const copy = [...arr];
+  const result = [];
+  while (result.length < n && copy.length > 0) {
+    const idx = Math.floor(Math.random() * copy.length);
+    result.push(copy.splice(idx, 1)[0]);
+  }
+  return result;
+}
+
+// ── 試験開始 ──────────────────────────────────────────────────────
+function startQuiz() {
+  const area = document.getElementById('quiz-area');
+  area.innerHTML = '';
+
+  const allPicked = [];
+  CATEGORIES.forEach((cat, ci) => {
+    const picked = pickRandom(cat.data, 2);
+    picked.forEach(row => allPicked.push({ row, catName: cat.name, catIdx: ci }));
+  });
+
+  // 問題番号をシャッフル（カテゴリ順ではなくランダム順で表示）
+  for (let i = allPicked.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [allPicked[i], allPicked[j]] = [allPicked[j], allPicked[i]];
+  }
+
+  // メタ行
+  const meta = document.createElement('div');
+  meta.className = 'quiz-meta';
+  meta.innerHTML = `<span>出題リスト</span><span class="total">全 ${allPicked.length} 問</span>`;
+  area.appendChild(meta);
+
+  // 各問
+  allPicked.forEach(({ row, catName, catIdx }, qIdx) => {
+    const [num, bone, part] = row;
+    const item = document.createElement('div');
+    item.className = 'quiz-item';
+    item.style.animationDelay = `${qIdx * 0.05}s`;
+    item.innerHTML = `
+      <div class="q-num">${qIdx + 1}</div>
+      <div class="q-content">
+        <span class="q-no">No.${num}</span>
+        <span class="q-bone">${bone}</span>
+        <span class="q-part">${part}</span>
+      </div>`;
+    area.appendChild(item);
+  });
+
+  // 検証：10問 / 各カテゴリ2問
+  console.assert(allPicked.length === 10, "❌ 問題数が10問ではありません");
+  CATEGORIES.forEach((cat, ci) => {
+    const cnt = allPicked.filter(p => p.catIdx === ci).length;
+    console.assert(cnt === 2, `❌ ${cat.name}: ${cnt}問（2問であるべき）`);
+  });
+  // 重複チェック（番号）
+  const nums = allPicked.map(p => p.row[0]);
+  const unique = new Set(nums);
+  console.assert(unique.size === 10, "❌ 重複する問題があります");
+}
+
+// ── 初期化 ────────────────────────────────────────────────────────
+buildTabs();
+renderTable(0);
+</script>
+</body>
+</html>
